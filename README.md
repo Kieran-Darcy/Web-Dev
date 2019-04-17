@@ -1,2 +1,2 @@
 # Web-Dev
-My 2 assessments from my Web Development module CO539
+This repository contains my 2 assessments for my Web Dev(CO539) module
