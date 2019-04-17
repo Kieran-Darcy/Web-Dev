@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Hygiene Ratings</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>    
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script>
+    $(document).ready(function() {
+        
+        // Stores an array of business names in the form of strings to use in the autocomplete function for the input box
+        var availableTags = ["KFC", "Alisha", "McDonalds", "Burger King"];
+
+        // Populates the table with headings
+        $("table").append("<thead><tr><th>Business</th><th>Address</th><th>Hygiene</th><th>Date</th><th>Rating</th></tr></thead>");
+        $("table").append("<tbody></tbody>");
+        
+        /*
+        * This function loads the page and gets all the information for the table on the requested page
+        * @param {Array} request - stores all the information for the type of search to perform and the values for it
+        */
+        function getPage(request) {            
+          $.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php", request, function(data) {
+            for(var keys in data) {
+            $("tbody").append("<tr><td>" + data[keys].name + "</td><td>" + data[keys].addressLine + "</td><td>" + data[keys].hygieneRating + "</td><td>" + data[keys].ratingDate + "</td><td><button class='rate' id='"+keys+"'>Get rating</button></td></tr>");          
+            if(request.operation == "search" && jQuery.inArray(data[keys].name, availableTags) == -1) {
+                availableTags.push(data[keys].name);
+                }                
+            }
+              
+          /*
+          * This function gets the rating of the business 
+          * @param {Array} info - stores all the information retrieved from the hygiene database on the current business
+          */
+          function retrieveRate(info) {          
+            $.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/rating.php", {"name" : info.name}, function(dat) {
+              var rate = "No Rating";
+              for(var i = 0; i < dat.length; i++) {              
+                  var hAddr = info.addressLine.split(" ", 1);
+                  var rAddr = dat[i].vicinity.split(" ", 1);
+                  for(strings in hAddr) {                  
+                      if(jQuery.inArray(hAddr[strings], rAddr) != -1){                      
+                          rate = dat[i].rating;
+                          break;
+                          }
+                      }
+                  }
+                alert(rate);
+                });
+              };
+          
+          // On click, retrieve the rating of the business clicked on via it's ID as an index
+          $(".rate").click(function() {
+              retrieveRate(data[$(this).attr("id")]);
+              });
+                  });
+                };
+          
+          // Calls get page with the information needed to load the first page
+          getPage({"operation" : "get", "page" : 1});
+        
+          // Loads in the form with the autocomplete functionality
+          $("<form id='myform'><input type='text' id='search' placeholder='Enter Business Name'><input type='submit' value='Search'></form>").insertAfter("table");
+          $( "#search" ).autocomplete({source: availableTags});
+         
+          // When the form is submited empties the table and loads the page with new parameters
+          $(document).on('submit', '#myform', function() {
+              $("tbody").empty();
+              getPage({"operation" : "search", "name" : $("#search").val()});
+              return false;
+              });
+
+
+          // Loads page navigation buttons
+          $.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php", {"operation" : "pages"}, function(data) {
+              $("<div class='pgs'>Pages: </div><br>").insertBefore("table");
+              for (var i = 1; i <= data.pages; i++) {
+                  $(".pgs").append("<button class='pgbtn'>"+i+"</button>");
+                  }
+
+              // On clicking a navigation button, the table will be reloaded with new information
+              $(".pgbtn").click(function() {
+                  $("tbody").empty();
+                  getPage({"operation" : "get", "page" : $(this).text()});
+                  });
+              });
+            });
+    </script>
+    <style>
+        
+        body {
+            background-color: #fcfcfc;
+        }
+        
+        table {
+            width: 100%;           
+            border-collapse: collapse;
+        }
+        
+        table * {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 3px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f1f1f1;
+        }
+        
+        thead * {
+            background-color: #bbb;
+        }
+        
+        tr:nth-child(odd) {
+            background-color: azure;
+        }
+        
+        .rate {
+            padding: 7px;
+            margin-left: 30%; 
+        }
+        
+        button {
+			cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        
+        .pgbtn {
+            border-radius: 5px;
+            padding: 5px 5px;
+            margin: 0px 2px;
+        }
+        
+        input {
+            border: 1px solid black;
+            background-color: #f1f1f1;
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 3px;
+            border-radius: 5px;
+        }
+        
+        input:hover {
+            background-color: #ddd;
+        }
+        
+    </style>
+  </head>
+  <body>
+    <p>This website allows you to see the hygiene rating for businesses in the database</p>
+    <table></table>
+  </body>
+</html>
